@@ -1,5 +1,63 @@
 import pandas as pd 
 
+#LENDO ARQUIVO JSON
+def read_document():
+    #df = pd.read_json(doc)
+    df = pd.read_csv('./base/2022_03.csv')
+    
+    df = df.drop(columns=['Identificador'])
+    
+    calculos_mes(df)
+
+#CALCULOS DO MES
+def calculos_mes(df):
+    
+    entrada = df['Valor'].loc[df['Valor'] > 0].sum()    #ENTRADA
+    saida = df['Valor'].loc[df['Valor'] < 0].sum()    #SAIDA
+    saldo = entrada + saida                         #SALDO
+    #fatura
+
+    enviado = df[df['Descrição'].str.contains('Transferência Enviada|Transferência enviada')]
+    enviado = enviado['Valor'].sum()                #ENVIADO
+
+    recebido = df[df['Descrição'].str.contains('Transferência Recebida|Transferência recebida')]
+    recebido = recebido['Valor'].sum()                #RECEBIDO
+
+    compra_debito = df[df['Descrição'].str.contains('Compra no débito')]
+    compra_debito = compra_debito['Valor'].sum()        #COMPRA DEBITO
+
+    ifood = df[df['Descrição'].str.contains('Ifd*')]
+    ifood = ifood['Valor'].sum()                        #IFOOD
+    
+    
+    print('Entrada: ' + str(entrada))
+    print('Saida :' + str(saida))
+    print('Saldo: ' + str(saldo))
+    print('Envidado: ' + str(enviado))
+    print('Recebido: ' + str(recebido))
+    print('Compras Débito: ' + str(compra_debito))
+    print('ifood: ' + str(ifood))
+    print('\n')
+
+
+def custo_vida(mes1, mes2, mes3):
+    custo = (mes1 + mes2 + mes3)/ 3
+    return custo
+
+def diferenca_porcent(antigo, atual):
+    porc = ((atual - antigo)/ antigo)*100
+    return porc
+
+read_document()
+
+
+
+
+
+
+
+
+
 #2019
 ago_19 = pd.read_csv('./base/2019_08.csv')
 set_19 = pd.read_csv('./base/2019_09.csv')
@@ -46,7 +104,7 @@ abr_22 = pd.read_csv('./base/2022_04.csv')
 mai_22 = pd.read_csv('./base/2022_05.csv')
 ano_2022 = pd.concat([jan_22, fev_22, mar_22, abr_22, mai_22])
 
-print(abr_22[abr_22['Descrição'].str.contains('Ifd*')])
+#print(abr_22[abr_22['Descrição'].str.contains('Ifd*')])
 
 
 #with pd.ExcelWriter('teste.xlsx') as writer:  
