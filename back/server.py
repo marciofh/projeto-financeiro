@@ -4,8 +4,7 @@ app = Flask(__name__)
 
 @app.route('/add_document', methods=['POST'])
 def hello_world():
-    data = request.json["data_doc"]
-    doc = request.json['doc']
+    doc = request.json['document']
     doc = json.dumps(doc)
     c.read_document(doc)
     return '200'
