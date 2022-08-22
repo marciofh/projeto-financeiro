@@ -45,14 +45,12 @@ fev_22 = pd.read_csv('./base/2022_02.csv')
 mar_22 = pd.read_csv('./base/2022_03.csv')
 abr_22 = pd.read_csv('./base/2022_04.csv')
 mai_22 = pd.read_csv('./base/2022_05.csv')
+jul_22 = pd.read_csv('./base/2022_07.csv')
 ano_2022 = pd.concat([jan_22, fev_22, mar_22, abr_22, mai_22])
 
 total = pd.concat([ano_2019, ano_2020, ano_2021, ano_2022])
 
-# with pd.ExcelWriter('EXTRATO_TOTAL.xlsx') as writer:  #NOME ARQUIVO
-#     ano_2019.to_excel(writer, sheet_name='2019')
-#     ano_2020.to_excel(writer, sheet_name='2020')
-#     ano_2021.to_excel(writer, sheet_name='2021')
-#     ano_2022.to_excel(writer, sheet_name='2022')
-    
-
+with pd.ExcelWriter('EXTRATO_TOTAL.xlsx') as writer:  #NOME ARQUIVO
+    mar_22.to_excel(writer, sheet_name='mar')
+    abr_22.to_excel(writer, sheet_name='abr')
+    jul_22.to_excel(writer, sheet_name='jul')
