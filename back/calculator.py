@@ -2,21 +2,16 @@ import pandas as pd
 import tabula as tb
 import datetime as dt
 import re
-import numpy as np
-
-#FILTROS
-extrato_nubank  = ['saque -', 'tarifa', 'depósito recebido por boleto', 'pagamento de boleto efetuado', 'compra no débito', 'pagamento da fatura',
-                'pagamento de fatura', 'transferência recebida', 'transferência enviada', 'débito em conta', 'crédito em conta', 'ifd*']
 
 #LENDO EXTRATO
 def read_extrato():
-    extrato = pd.read_csv('./base/08.csv', parse_dates = ['Data'], dayfirst = True)
+    extrato = pd.read_csv('back/base/08.csv', parse_dates = ['Data'], dayfirst = True)
     extrato = extrato.drop(columns = ['Identificador'])
 
     return extrato
 
 #TRATANDO MOVIMENTAÇÕES
-def cont_movimentacao(df):
+def count_movimentacao(df):
     movimentacoes = df[df['Descrição'].str.contains('070.092.866-98', case = False)]
     sem_movimentacoes = df[~df['Descrição'].str.contains('070.092.866-98', case = False)]
     mov_picpay = movimentacoes[movimentacoes['Descrição'].str.contains('12393860-0', case = False)]
@@ -35,7 +30,7 @@ def cont_movimentacao(df):
 #CALCULO DO EXTRATO
 def calcula_extrato(_dict):
     extrato_real = _dict['sem_mov']
-    movimentacoes =[_dict['picpay'], _dict['sicoob'], _dict['xp']] 
+    movimentacoes = [_dict['picpay'], _dict['sicoob'], _dict['xp']] 
 
     entrada = extrato_real['Valor'].loc[extrato_real['Valor'] > 0].sum()
     saida = extrato_real['Valor'].loc[extrato_real['Valor'] < 0].sum()
@@ -75,24 +70,26 @@ def calcula_extrato(_dict):
     salario = extrato_real[extrato_real['Descrição'].str.contains('SOL PLACE', case = False)] #SALÁRIO
     salario = salario['Valor'].sum() 
 
-    picpay = _dict['picpay']['Valor'].sum()
-    sicoob = _dict['sicoob']['Valor'].sum()
-    xp = _dict['xp']['Valor'].sum()
+    picpay = _dict['picpay']['Valor'].sum() #MOVIMENTAÇÕES PICPAY
+    sicoob = _dict['sicoob']['Valor'].sum() #MOVIMENTAÇÕES SICOOB
+    xp = _dict['xp']['Valor'].sum() #MOVIMENTAÇÕES XP
 
-    util = pd.bdate_range(start='8/1/2022', end='8/31/2022').to_list()
-    util = pd.to_datetime(util)
-    # util = util.to_series()
-    # util = util.reset_index(drop=True)
-    # print(util)
-    v = ['2022-08-08','2022-08-08','2022-08-10','2022-08-10']
-
-    dia_util = pd.DataFrame()
-    for i in v:
-        print(i)
-        pd.concat([extrato_real.loc[extrato_real['Data'] == i], dia_util])
-    print(dia_util)
-
-
+    #DIA DE SEMANA 
+    df_util = pd.DataFrame()
+    df_util = extrato_real.loc[extrato_real['Data'].map(lambda x: x.weekday() < 5)]#0 Mon, 1 Tue, 2 Wed, 3 Thu, 4 Fri
+    
+    soma_util = df_util['Valor'].loc[df_util['Valor'] < 0].sum() #TOTAL DE GASTO DURANTE SEMANA 
+    qtde_util = len(df_util['Data'].unique())
+    media_util = soma_util / qtde_util #MÉDIA DE GASTO DURANTE SEMANA
+    
+    #FINAL DE SEMANA
+    df_fds = pd.DataFrame()
+    df_fds = extrato_real.loc[extrato_real['Data'].map(lambda x: x.weekday() > 4)] #5 Sat, 6 Sun
+    
+    soma_fds = df_fds['Valor'].loc[df_fds['Valor'] < 0].sum() #TOTAL DE GASTO DURANTE FINAL DE SEMANA
+    qtde_fds = len(df_fds['Data'].unique())
+    media_fds = soma_fds / qtde_fds #MÉDIA DE GASTO DURANTE FINAL DE SEMANA
+    
     dict_extrato = {
         'entrada': entrada,
         'saida': saida,
@@ -113,8 +110,6 @@ def calcula_extrato(_dict):
     
     return dict_extrato
 
-    
-
 #CALCULO DIFERENÇA EM PORCENTAGEM
 def diff_porcentagem(antigo, atual):
     porc = ((atual - antigo) / antigo) * 100
@@ -122,6 +117,8 @@ def diff_porcentagem(antigo, atual):
 
 #VERIFICANDO FILTROS
 def search_filter(df):
+    extrato_nubank  = ['saque -', 'tarifa', 'depósito recebido por boleto', 'pagamento de boleto efetuado', 'compra no débito', 'pagamento da fatura',
+                'pagamento de fatura', 'transferência recebida', 'transferência enviada', 'débito em conta', 'crédito em conta', 'ifd*']
     for filtro in extrato_nubank:
         df_verificado = df[~df['Descrição'].str.contains(filtro, case = False )]
         df = df_verificado
@@ -178,8 +175,7 @@ def read_fatura():
 
     return df
 
-
 if __name__ == "__main__":
     df = read_extrato()
-    dict_mov = cont_movimentacao(df)
+    dict_mov = count_movimentacao(df)
     calcula_extrato(dict_mov)

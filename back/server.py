@@ -1,5 +1,5 @@
 from flask import Flask, request, json
-import controller as c
+import calculator as c
 app = Flask(__name__)
 
 @app.route('/add_document', methods=['POST'])
