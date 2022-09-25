@@ -7,7 +7,8 @@ import re
 def read_extrato():
     extrato = pd.read_csv('back/base/08.csv', parse_dates = ['Data'], dayfirst = True)
     extrato = extrato.drop(columns = ['Identificador'])
-
+    
+    #VERIFICAÇÃO DE MES E ANO - passar mes e ano no return
     return extrato
 
 #TRATANDO MOVIMENTAÇÕES
@@ -110,6 +111,58 @@ def calcula_extrato(_dict):
     
     return dict_extrato
 
+#LENDO FATURA
+def read_fatura():
+    df = pd.DataFrame()
+    doc = tb.read_pdf('back/base/nu.pdf', pages='all', pandas_options={'header': None})
+    for tabela in doc:
+        df = pd.concat([df, tabela])
+    
+    df = df.iloc[:,[0,2,3]] #pegando as 3 primeiras colunas
+    df.set_axis(['Data', 'Descrição', 'Valor'], axis='columns', inplace=True)
+    df = df.dropna()
+    df = df.reset_index(drop=True)
+
+    #tratando data
+    df['Data'] = df['Data'].map(lambda x: re.sub(' ', '', x))
+    ano = 2022 #ARRUMAR ANO
+    for index, row in df.iterrows():
+        if re.search('JAN', row['Data']):
+            df['Data'][index] = re.sub('JAN', '-01-{}'.format(ano), row['Data'])
+        elif re.search('FEV', row['Data']):
+            df['Data'][index] = re.sub('FEV', '-02-{}'.format(ano), row['Data'])
+        elif re.search('MAR', row['Data']):
+            df['Data'][index] = re.sub('MAR', '-03-{}'.format(ano), row['Data'])
+        elif re.search('ABR', row['Data']):
+            df['Data'][index] = re.sub('ABR', '-04-{}'.format(ano), row['Data'])
+        elif re.search('MAI', row['Data']):
+            df['Data'][index] = re.sub('MAI', '-05-{}'.format(ano), row['Data'])
+        elif re.search('JUN', row['Data']):
+            df['Data'][index] = re.sub('JUN', '-06-{}'.format(ano), row['Data'])
+        elif re.search('JUL', row['Data']):
+            df['Data'][index] = re.sub('JUL', '-07-{}'.format(ano), row['Data'])
+        elif re.search('AGO', row['Data']):
+            df['Data'][index] = re.sub('AGO', '-08-{}'.format(ano), row['Data'])
+        elif re.search('SET', row['Data']):
+            df['Data'][index] = re.sub('SET', '-09-{}'.format(ano), row['Data'])
+        elif re.search('OUT', row['Data']):
+            df['Data'][index] = re.sub('OUT', '-10-{}'.format(ano), row['Data'])
+        elif re.search('NOV', row['Data']):
+            df['Data'][index] = re.sub('NOV', '-11-{}'.format(ano), row['Data'])
+        elif re.search('DEZ', row['Data']):
+            df['Data'][index] = re.sub('DEZ', '-12-{}'.format(ano), row['Data'])
+
+    df['Data'] = pd.to_datetime(df['Data'], infer_datetime_format=False, dayfirst = True)
+    
+    return df
+
+def calcula_fatura(df):
+    print(df)
+    # fatura_total = df[df['Descrição'].str.contains('transferência enviada', case = False)] #ENVIADO
+    # enviado = enviado['Valor'].sum()  
+
+
+
 #CALCULO DIFERENÇA EM PORCENTAGEM
 def diff_porcentagem(antigo, atual):
     porc = ((atual - antigo) / antigo) * 100
@@ -133,49 +186,39 @@ def check_date(df):
     array_ano = df['ano'].unique()
 
     print(array_mes, array_ano)
-    return 
+    return               
 
-def read_picpay():
-    df = pd.DataFrame()
-    doc = tb.read_pdf('./base/picjun.pdf', pages='all')
-    for tabela in doc:
-        df = pd.concat([df, tabela])
+# def read_picpay():
+#     df = pd.DataFrame()
+#     doc = tb.read_pdf('./base/picjun.pdf', pages='all')
+#     for tabela in doc:
+#         df = pd.concat([df, tabela])
     
-    df = df.iloc[:,[0,1,2]] #pegando as 3 primeiras colunas
-    df.set_axis(['Data', 'Descrição', 'Valor'], axis='columns', inplace=True)
-    df = df.reset_index(drop=True)
+#     df = df.iloc[:,[0,1,2]] #pegando as 3 primeiras colunas
+#     df.set_axis(['Data', 'Descrição', 'Valor'], axis='columns', inplace=True)
+#     df = df.reset_index(drop=True)
 
-    df['Data'] = df['Data'].map(lambda x: x[0:10])
-    df['Valor'] = df['Valor'].map(lambda x: re.sub('[^0-9-,]', '', x))
-    df['Valor'] = df['Valor'].map(lambda x: re.sub(',', '.', x))
-    df['Valor'] = df['Valor'].astype(float)
+#     df['Data'] = df['Data'].map(lambda x: x[0:10])
+#     df['Valor'] = df['Valor'].map(lambda x: re.sub('[^0-9-,]', '', x))
+#     df['Valor'] = df['Valor'].map(lambda x: re.sub(',', '.', x))
+#     df['Valor'] = df['Valor'].astype(float)
     
-    #Calculo para remoção de movimentações
-    df['Movimentação'] = (df['Valor'].shift(-1)) #subindo a coluna uma linha pra cima
+#     #Calculo para remoção de movimentações
+#     df['Movimentação'] = (df['Valor'].shift(-1)) #subindo a coluna uma linha pra cima
 
-    list_index = df.index[df['Valor'] == (df['Movimentação']*(-1))].tolist() #lista de movimentações
-    print(list_index)
+#     list_index = df.index[df['Valor'] == (df['Movimentação']*(-1))].tolist() #lista de movimentações
+#     print(list_index)
     
-    for i in list_index:
-        df = df.drop(i)
-        df = df.drop(i+1)
+#     for i in list_index:
+#         df = df.drop(i)
+#         df = df.drop(i+1)
     
-    print(df)
-
-def read_fatura():
-    df = pd.DataFrame()
-    doc = tb.read_pdf('./base/nu_mai.pdf', pages='all', pandas_options={'header': None})
-    for tabela in doc:
-        df = pd.concat([df, tabela])
-    
-    df = df.iloc[:,[0,2,3]] #pegando as 3 primeiras colunas
-    df.set_axis(['Data', 'Descrição', 'Valor'], axis='columns', inplace=True)
-    df = df.dropna()
-    df = df.reset_index(drop=True)
-
-    return df
+#     print(df)
 
 if __name__ == "__main__":
-    df = read_extrato()
-    dict_mov = count_movimentacao(df)
-    calcula_extrato(dict_mov)
+    # df = read_extrato()
+    # dict_mov = count_movimentacao(df)
+    # calcula_extrato(dict_mov)
+
+    df = read_fatura()
+    calcula_fatura(df)
